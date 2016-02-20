@@ -27,14 +27,11 @@ import java.util.ArrayList;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.text.format.DateUtils;
 import android.util.Log;
-import android.content.ContentResolver;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -47,7 +44,6 @@ import android.widget.SeekBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 
@@ -61,9 +57,10 @@ public class FullPlaybackActivity extends PlaybackActivity
 	public static final int DISPLAY_INFO_OVERLAP = 0;
 	public static final int DISPLAY_INFO_BELOW = 1;
 	public static final int DISPLAY_INFO_WIDGETS = 2;
+    static final int UPDATE_INTERVAL = 500;
 
 	private TextView mOverlayText;
-	private View mControlsTop;
+	private ViewGroup mControlsTop;
 	private View mControlsBottom;
 
 	private SeekBar mSeekBar;
@@ -71,6 +68,7 @@ public class FullPlaybackActivity extends PlaybackActivity
 	private TextView mElapsedView;
 	private TextView mDurationView;
 	private TextView mQueuePosView;
+	private LyricsView mLyricsView;
 
 	private TextView mTitle;
 	private TextView mAlbum;
@@ -180,13 +178,15 @@ public class FullPlaybackActivity extends PlaybackActivity
 		mAlbum = (TextView)findViewById(R.id.album);
 		mArtist = (TextView)findViewById(R.id.artist);
 
-		mControlsTop = findViewById(R.id.controls_top);
+		mControlsTop = (ViewGroup) findViewById(R.id.controls_top);
 		mElapsedView = (TextView)findViewById(R.id.elapsed);
 		mDurationView = (TextView)findViewById(R.id.duration);
 		mSeekBar = (SeekBar)findViewById(R.id.seek_bar);
 		mSeekBar.setMax(1000);
 		mSeekBar.setOnSeekBarChangeListener(this);
 		mQueuePosView = (TextView)findViewById(R.id.queue_pos);
+
+        mLyricsView = (LyricsView) findViewById(R.id.lyrics_view);
 
 		mGenreView = (TextView)findViewById(R.id.genre);
 		mTrackView = (TextView)findViewById(R.id.track);
@@ -205,6 +205,7 @@ public class FullPlaybackActivity extends PlaybackActivity
 		setControlsVisible(settings.getBoolean(PrefKeys.VISIBLE_CONTROLS, PrefDefaults.VISIBLE_CONTROLS));
 		setExtraInfoVisible(settings.getBoolean(PrefKeys.VISIBLE_EXTRA_INFO, PrefDefaults.VISIBLE_EXTRA_INFO));
 		setDuration(0);
+
 	}
 
 	@Override
@@ -311,6 +312,7 @@ public class FullPlaybackActivity extends PlaybackActivity
 				mTitle.setText(song.title);
 				mAlbum.setText(song.album);
 				mArtist.setText(song.artist);
+				mLyricsView.setLyricsFilePathFromSongPath(song.path);
 			}
 			updateQueuePosition();
 		}
@@ -496,9 +498,11 @@ public class FullPlaybackActivity extends PlaybackActivity
 
 		mElapsedView.setText(DateUtils.formatElapsedTime(mTimeBuilder, position / 1000));
 
+        mLyricsView.setCurrentMillis((int)position);
+
 		if (!mPaused && mControlsVisible && (mState & PlaybackService.FLAG_PLAYING) != 0) {
-			// Try to update right after the duration increases by one second
-			long next = 1050 - position % 1000;
+			// Try to update right after the duration increases by half a second
+			long next = UPDATE_INTERVAL + 10 - position % UPDATE_INTERVAL;
 			mUiHandler.removeMessages(MSG_UPDATE_PROGRESS);
 			mUiHandler.sendEmptyMessageDelayed(MSG_UPDATE_PROGRESS, next);
 		}

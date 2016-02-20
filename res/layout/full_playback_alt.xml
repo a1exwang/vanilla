@@ -25,6 +25,7 @@ THE SOFTWARE.
 		android:id="@+id/cover_view"
 		android:layout_height="fill_parent"
 		android:layout_width="fill_parent" />
+
 	<TableLayout
 		android:id="@+id/info_table"
 		android:layout_width="fill_parent"
@@ -138,7 +139,18 @@ THE SOFTWARE.
 				android:textSize="10sp"
 				android:layout_gravity="center" />
 		</LinearLayout>
+
+		<ch.blinkenlights.android.vanilla.LyricsView
+			android:padding="@dimen/text_padding"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:id="@+id/lyrics_view"
+			android:layout_gravity="center_horizontal|center_vertical"
+			android:background="#00000000"
+			android:text="haha"/>
+
 	</TableLayout>
+
 	<LinearLayout
 		android:id="@+id/controls_bottom"
 		android:layout_height="wrap_content"
