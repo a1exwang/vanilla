@@ -644,7 +644,7 @@ public class MediaUtils {
             qargs = sanitizedPlaylist;
         } else {
             path = fullPath + "%";
-            query = "_data = ? AND " + MediaStore.Audio.Media.IS_MUSIC;
+            query = "_data LIKE ? AND " + MediaStore.Audio.Media.IS_MUSIC;
             qargs = new String[] { path };
         }
 
@@ -667,7 +667,7 @@ public class MediaUtils {
 		try {
 			data.setDataSource(path);
 		} catch (Exception e) {
-				Log.w("VanillaMusic", "Failed to extract metadata from " + path);
+			Log.w("VanillaMusic", "Failed to extract metadata from " + path);
 		}
 
 		String title = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);

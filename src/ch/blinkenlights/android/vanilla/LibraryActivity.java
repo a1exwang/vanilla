@@ -64,6 +64,8 @@ import android.widget.Toast;
 import android.widget.SearchView;
 
 import java.io.File;
+import java.io.IOException;
+
 import junit.framework.Assert;
 
 /**
@@ -624,6 +626,7 @@ public class LibraryActivity
 	private static final int MENU_MORE_FROM_ALBUM = 11;
 	private static final int MENU_MORE_FROM_ARTIST = 12;
 	private static final int MENU_OPEN_EXTERNAL = 13;
+	private static final int MENU_ADD_FOLDERS_TO_PLAYLISTS = 14;
 
 	/**
 	 * Creates a context menu for an adapter row.
@@ -663,6 +666,8 @@ public class LibraryActivity
 			if (type == MediaUtils.TYPE_SONG)
 				menu.add(0, MENU_MORE_FROM_ALBUM, 0, R.string.more_from_album).setIntent(rowData);
 			menu.addSubMenu(0, MENU_ADD_TO_PLAYLIST, 0, R.string.add_to_playlist).getItem().setIntent(rowData);
+            if (type == MediaUtils.TYPE_FILE)
+                menu.add(0, MENU_ADD_FOLDERS_TO_PLAYLISTS, 0, R.string.add_folders_to_playlists).setIntent(rowData);
 			menu.add(0, MENU_DELETE, 0, R.string.delete).setIntent(rowData);
 		}
 	}
@@ -764,6 +769,53 @@ public class LibraryActivity
 			}
 			break;
 		}
+        case MENU_ADD_FOLDERS_TO_PLAYLISTS: {
+            // Check all play lists that have music files in them
+            //  create and add songs to the playlist.
+
+            String filePath = intent.getStringExtra(LibraryAdapter.DATA_FILE);
+            if (filePath == null)
+                break;
+            File folder = new File(filePath);
+            if (!folder.isDirectory())
+                break;
+
+            for (String entry : folder.list()) {
+                File subFolder = new File(folder, entry);
+                if (subFolder.isDirectory()) {
+                    boolean isMusicFolder = false;
+                    for (String musicFile : subFolder.list()) {
+                        // check real music file
+                        File music = new File(subFolder, musicFile);
+                        try {
+                            Cursor cursor = MediaUtils.getCursorForFileQuery(music.getCanonicalPath());
+                            if (cursor.moveToNext()) {
+                                isMusicFolder = true;
+                                break;
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    if (isMusicFolder) {
+                        String playlistName = "L" + subFolder.getName();
+                        long playlistId = Playlist.createPlaylist(getContentResolver(), playlistName);
+                        PlaylistTask playlistTask = new PlaylistTask(playlistId, playlistName);
+                        try {
+                            QueryTask query = MediaUtils.buildFileQuery(subFolder.getCanonicalPath(),
+                                    Song.FILLED_PROJECTION);
+                            playlistTask.query = query;
+                            addToPlaylist(playlistTask);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+
+            break;
+        }
 		case MENU_SELECT_PLAYLIST:
 			long playlistId = intent.getLongExtra("playlist", -1);
 			String playlistName = intent.getStringExtra("playlistName");
