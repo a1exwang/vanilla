@@ -22,7 +22,13 @@
 
 package ch.blinkenlights.android.vanilla;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -554,8 +560,58 @@ public class MediaUtils {
 		return path;
 	}
 
+    /**
+     * Check if the file is a playlist file.
+     */
+    private static boolean isPlaylistFile(String path) {
+        return path.matches(".*\\.[Mm]3[Uu]$");
+    }
+
+    /**
+     * Retrieve the file list from a playlist file.
+     */
+    private static String[] getFilesFromPlaylist(String playlistFilePath) {
+        if (playlistFilePath.matches(".*\\.[Mm]3[Uu]$")) {
+            try {
+                String[] currentDirStrs = playlistFilePath.split("/");
+                String currentDir = "";
+                for (int i = 0; i < currentDirStrs.length - 1; ++i) {
+                    currentDir += currentDirStrs[i] + "/";
+                }
+
+                FileInputStream fis = new FileInputStream(playlistFilePath);
+                InputStreamReader isr = new InputStreamReader(fis);
+                BufferedReader reader = new BufferedReader(isr);
+
+                ArrayList<String> playlist = new ArrayList<>();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    File file = new File(line);
+                    if (file.exists()) {
+                        playlist.add(file.getCanonicalPath());
+                    } else {
+                        file = new File(currentDir, line);
+                        if (file.exists()) {
+                            playlist.add(file.getCanonicalPath());
+                        }
+                    }
+                }
+
+                reader.close();
+                isr.close();
+                fis.close();
+
+                return playlist.toArray(new String[playlist.size()]);
+
+            } catch (IOException e) {
+            }
+        }
+        return new String[] { };
+    }
+
 	/**
 	 * Build a query that will contain all the media under the given path.
+	 * If the file given is a playlist file, it will build file query for all the songs.
 	 *
 	 * @param path The path, e.g. /mnt/sdcard/music/
 	 * @param projection The columns to query
@@ -568,9 +624,30 @@ public class MediaUtils {
 		   -> terminated with a / if it is a directory
 		   -> ended with a % for the LIKE query
 		*/
-		path = addDirEndSlash(sanitizeMediaPath(path)) + "%";
-		final String query = "_data LIKE ? AND "+MediaStore.Audio.Media.IS_MUSIC;
-		String[] qargs = { path };
+
+        final String query;
+        String[] qargs;
+
+        String fullPath = addDirEndSlash(sanitizeMediaPath(path));
+        if (isPlaylistFile(fullPath)) {
+            String[] playlist = getFilesFromPlaylist(fullPath);
+            String[] sanitizedPlaylist = new String[playlist.length];
+
+            StringBuilder querySb = new StringBuilder("((1 = 0)");
+            for (int i = 0; i < playlist.length; ++i) {
+                querySb.append(" OR (_data LIKE ?)");
+                sanitizedPlaylist[i] = addDirEndSlash(sanitizeMediaPath(playlist[i])) + "%";
+            }
+            querySb.append(") AND ").append(MediaStore.Audio.Media.IS_MUSIC).append("");
+            query = querySb.toString();
+
+            qargs = sanitizedPlaylist;
+        } else {
+            path = fullPath + "%";
+            query = "_data = ? AND " + MediaStore.Audio.Media.IS_MUSIC;
+            qargs = new String[] { path };
+        }
+
 
 		Uri media = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 		QueryTask result = new QueryTask(media, projection, query, qargs, DEFAULT_SORT);

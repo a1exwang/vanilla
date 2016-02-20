@@ -627,18 +627,23 @@ public class LibraryActivity
 
 	/**
 	 * Creates a context menu for an adapter row.
+     * This method is called when a item of a list in one of the tab pages are long clicked.
 	 *
 	 * @param menu The menu to create.
 	 * @param rowData Data for the adapter row.
 	 */
 	public void onCreateContextMenu(ContextMenu menu, Intent rowData)
 	{
+        // The item is the header
 		if (rowData.getLongExtra(LibraryAdapter.DATA_ID, LibraryAdapter.INVALID_ID) == LibraryAdapter.HEADER_ID) {
 			menu.setHeaderTitle(getString(R.string.all_songs));
 			menu.add(0, MENU_PLAY_ALL, 0, R.string.play_all).setIntent(rowData);
 			menu.add(0, MENU_ENQUEUE_ALL, 0, R.string.enqueue_all).setIntent(rowData);
 			menu.addSubMenu(0, MENU_ADD_TO_PLAYLIST, 0, R.string.add_to_playlist).getItem().setIntent(rowData);
-		} else {
+
+		}
+        // The item is other valid items.
+        else {
 			int type = rowData.getIntExtra(LibraryAdapter.DATA_TYPE, MediaUtils.TYPE_INVALID);
 
 			menu.setHeaderTitle(rowData.getStringExtra(LibraryAdapter.DATA_TITLE));
