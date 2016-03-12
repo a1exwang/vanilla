@@ -28,11 +28,15 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,6 +56,13 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback {
 		MediaStore.Audio.Playlists.Members.ALBUM_ID,
 		MediaStore.Audio.Playlists.Members.PLAY_ORDER,
 	};
+
+    private static final int CURSOR_ROW_ID = 0;
+	private static final int CURSOR_ROW_TITLE = 1;
+    private static final int CURSOR_ROW_ARTIST = 2;
+    private static final int CURSOR_ROW_AUDIO_ID = 3;
+    private static final int CURSOR_ROW_ALBUM_ID = 4;
+    private static final int CURSOR_ROW_PLAY_ORDER = 5;
 
 	private final Context mContext;
 	private final Handler mWorkerHandler;
@@ -112,11 +123,18 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback {
 		dview.showDragger(mEditable);
 
 		TextView textView = dview.getTextView();
-		textView.setText(cursor.getString(1));
-		textView.setTag(cursor.getLong(3));
+
+        String title = cursor.getString(CURSOR_ROW_TITLE);
+        String artist = cursor.getString(CURSOR_ROW_ARTIST);
+        SpannableStringBuilder sb = new SpannableStringBuilder(title);
+        sb.append('\n');
+        sb.append(artist);
+        sb.setSpan(new ForegroundColorSpan(Color.GRAY), title.length() + 1, sb.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+		textView.setText(sb);
+		textView.setTag(cursor.getLong(CURSOR_ROW_AUDIO_ID));
 
 		LazyCoverView cover = dview.getCoverView();
-		cover.setCover(MediaUtils.TYPE_ALBUM, cursor.getLong(4), null);
+		cover.setCover(MediaUtils.TYPE_ALBUM, cursor.getLong(CURSOR_ROW_ALBUM_ID), null);
 	}
 
 	/**

@@ -177,8 +177,8 @@ public class MediaAdapter
 		switch (type) {
 		case MediaUtils.TYPE_ARTIST:
 			mStore = MediaStore.Audio.Artists.EXTERNAL_CONTENT_URI;
-			mFields = new String[] { MediaStore.Audio.Artists.ARTIST };
-			mFieldKeys = new String[] { MediaStore.Audio.Artists.ARTIST_KEY };
+			mFields = new String[] { MediaStore.Audio.Artists.ARTIST, MediaStore.Audio.Artists.NUMBER_OF_TRACKS };
+			mFieldKeys = new String[] { MediaStore.Audio.Artists.ARTIST_KEY, MediaStore.Audio.Artists.NUMBER_OF_TRACKS };
 			mSongSort = MediaUtils.DEFAULT_SORT;
 			mSortEntries = new int[] { R.string.name, R.string.number_of_tracks };
 			mSortValues = new String[] { "artist_key %1$s", "number_of_tracks %1$s,artist_key %1$s" };
@@ -258,7 +258,6 @@ public class MediaAdapter
 	 * Build the query to be run with runQuery().
 	 *
 	 * @param projection The columns to query.
-	 * @param forceMusicCheck Force the is_music check to be added to the
 	 * selection.
 	 */
 	private QueryTask buildQuery(String[] projection, boolean returnSongs)
@@ -465,8 +464,7 @@ public class MediaAdapter
 	}
 
 	@Override
-	public View getView(int position, View view, ViewGroup parent)
-	{
+	public View getView(int position, View view, ViewGroup parent) {
 		ViewHolder holder;
 
 		if (view == null) {
@@ -477,17 +475,17 @@ public class MediaAdapter
 			holder = new ViewHolder();
 			view.setTag(holder);
 
-			holder.text = (TextView)view.findViewById(R.id.text);
-			holder.divider = (View)view.findViewById(R.id.divider);
-			holder.arrow = (ImageView)view.findViewById(R.id.arrow);
-			holder.cover = (LazyCoverView)view.findViewById(R.id.cover);
+			holder.text = (TextView) view.findViewById(R.id.text);
+			holder.divider = (View) view.findViewById(R.id.divider);
+			holder.arrow = (ImageView) view.findViewById(R.id.arrow);
+			holder.cover = (LazyCoverView) view.findViewById(R.id.cover);
 			holder.arrow.setOnClickListener(this);
 
 			holder.divider.setVisibility(mExpandable ? View.VISIBLE : View.GONE);
 			holder.arrow.setVisibility(mExpandable ? View.VISIBLE : View.GONE);
 			holder.cover.setVisibility(mCoverCacheType != MediaUtils.TYPE_INVALID ? View.VISIBLE : View.GONE);
 		} else {
-			holder = (ViewHolder)view.getTag();
+			holder = (ViewHolder) view.getTag();
 		}
 
 		Cursor cursor = mCursor;
@@ -506,9 +504,23 @@ public class MediaAdapter
 			sb.setSpan(new ForegroundColorSpan(Color.GRAY), line1.length() + 1, sb.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 			holder.text.setText(sb);
 			holder.title = line1;
+		} else if (mProjection.length == 4) {
+			String title = cursor.getString(2);
+			int numOfTracks = cursor.getInt(3);
+			if (title == null) {
+				title = "???";
+			}
+			SpannableStringBuilder sb = new SpannableStringBuilder(title);
+			sb.append('\n');
+			sb.append(String.valueOf(numOfTracks) + (numOfTracks <= 1 ? " Song" : " Songs"));
+			sb.setSpan(new ForegroundColorSpan(Color.GRAY), title.length() + 1, sb.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+			holder.text.setText(sb);
+			holder.title = title;
 		} else {
 			String title = cursor.getString(2);
-			if(title == null) { title = "???"; }
+			if (title == null) {
+				title = "???";
+			}
 			holder.text.setText(title);
 			holder.title = title;
 		}

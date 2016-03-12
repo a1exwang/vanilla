@@ -186,7 +186,7 @@ public class LibraryActivity
 		mBottomBarControls.setOnQueryTextListener(this);
 		mBottomBarControls.enableOptionsMenu(this);
 
-		if(PermissionRequestActivity.havePermissions(this) == false) {
+		if(!PermissionRequestActivity.havePermissions(this)) {
 			PermissionRequestActivity.showWarning(this, getIntent());
 		}
 
